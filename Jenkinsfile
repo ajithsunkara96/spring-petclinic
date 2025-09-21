@@ -74,11 +74,20 @@ pipeline {
             }
         }
         stage('Deploy to Kubernetes') {
-            steps {
-                sh "kubectl set image deployment/$IMAGE_NAME $IMAGE_NAME=$ACR_URL/$IMAGE_NAME:$IMAGE_TAG"
-                sh "kubectl rollout status deployment/$IMAGE_NAME"
-            }
-        }
+  steps {
+    withCredentials([
+      usernamePassword(credentialsId: 'azure-sp', usernameVariable: 'SP_APP_ID', passwordVariable: 'SP_SECRET'),
+      string(credentialsId: 'azure-tenant', variable: 'TENANT_ID')
+    ]) {
+      sh '''
+        az login --service-principal -u $SP_APP_ID -p $SP_SECRET --tenant $TENANT_ID
+        az aks get-credentials -g Project-4 -n project4-aks-cluster --overwrite-existing
+        kubectl set image deployment/spring-petclinic spring-petclinic=$ACR_URL/$IMAGE_NAME:$IMAGE_TAG -n default
+        kubectl rollout status deployment/spring-petclinic -n default --timeout=180s
+      '''
+    }
+  }
+}
     }
     post {
         always {
