@@ -1,0 +1,7 @@
+*
+!target/*.jar
+!Dockerfile
+!README.md
+!LICENSE
+!src/
+!pom.xml
